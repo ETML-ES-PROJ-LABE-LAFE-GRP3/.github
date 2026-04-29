@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info:
+  title: API ms-voting (LAJF-2026)
+  description: Spécification Swagger du microservice de vote. L'anonymat est garanti par l'utilisation de codes de vote (votingCode) séparés de l'identité de l'utilisateur.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Serveur Voting
+
+tags:
+  - name: Voting
+    description: Actions de vote
+  - name: Internal
+    description: API interne
+
+paths:
+  /votes:
+    post:
+      tags: [Voting]
+      summary: Soumettre un vote de manière anonyme
+      description: Ne nécessite pas d'authentification Bearer, utilise le votingCode du payload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteDTO'
+      responses:
+        '201':
+          description: Vote enregistré
+
+  /votes/{votingCode}:
+    put:
+      tags: [Voting]
+      summary: Mettre à jour un vote existant
+      parameters:
+        - name: votingCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteDTO'
+      responses:
+        '200':
+          description: Vote mis à jour
+    delete:
+      tags: [Voting]
+      summary: Annuler un vote
+      parameters:
+        - name: votingCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Vote annulé
+
+  /internal/results/{pollId}:
+    get:
+      tags: [Internal]
+      summary: Récupérer les données agrégées d'un sondage
+      description: API interne appelée par ms-management pour récupérer les résultats depuis ms-voting.
+      parameters:
+        - name: pollId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Données agrégées retournées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AggregatedDataDTO'
+
+components:
+  schemas:
+    VoteDTO:
+      type: object
+      required: [votingCode, responses]
+      properties:
+        votingCode:
+          type: string
+          description: Code de vote anonyme récupéré depuis ms-management
+        responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndividualResponseDTO'
+
+    IndividualResponseDTO:
+      type: object
+      required: [questionId]
+      properties:
+        questionId:
+          type: integer
+        textResponse:
+          type: string
+          description: Utilisé uniquement pour les questions de type OPEN
+        choiceIds:
+          type: array
+          items:
+            type: integer
+          description: Utilisé pour les questions de type SINGLE_CHOICE ou MULTIPLE_CHOICE
+
+    AggregatedDataDTO:
+      type: object
+      properties:
+        questionId:
+          type: integer
+        choiceId:
+          type: integer
+          nullable: true
+        answerText:
+          type: string
+          nullable: true
+        totalVotes:
+          type: integer
