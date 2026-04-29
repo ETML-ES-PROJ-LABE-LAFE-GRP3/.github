@@ -1,0 +1,113 @@
+@startuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+package "Database ms-management" #E3F2FD {
+    
+    enum SurveyState {
+        DRAFT
+        ACTIVE
+        CLOSED
+    }
+
+    enum QuestionType {
+        OPEN
+        SINGLE_CHOICE
+        MULTIPLE_CHOICE
+    }
+
+    entity "User" {
+        * id : Long <<PK>>
+        --
+        * username : String
+        * password : String
+        * email : String
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    entity "Survey" {
+        * id : Long <<PK>>
+        --
+        * userId : Long <<FK>>
+        * title : String
+        * state : SurveyState
+        * createdAt : DateTime
+        * updatedAt : DateTime
+        * closedAt : DateTime (Nullable)
+    }
+
+    entity "Question" {
+        * id : Long <<PK>>
+        --
+        * surveyId : Long <<FK>>
+        * text : String
+        * type : QuestionType
+        * position : Integer
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    entity "Choice" {
+        * id : Long <<PK>>
+        --
+        * questionId : Long <<FK>>
+        * text : String
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    entity "Invitation" {
+        * id : Long <<PK>>
+        --
+        * userId : Long <<FK>>
+        * surveyId : Long <<FK>>
+        * votingCode : String <<Unique>>
+        * isUsed : Boolean
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    entity "AggregatedResult" {
+        * id : Long <<PK>>
+        --
+        * questionId : Long <<FK>>
+        * choiceId : Long <<FK, Nullable>>
+        * answerText : String <<Nullable>>
+        * totalVotes : Integer
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    User "1" -- "0,n" Survey : "userId"
+    Survey "1" -- "1,n" Question : "surveyId"
+    Question "1" -- "0,n" Choice : "questionId"
+    User "1" -- "0,n" Invitation : "userId"
+    Survey "1" -- "0,n" Invitation : "surveyId"
+    Question "1" -- "0,n" AggregatedResult : "questionId"
+}
+
+package "Database ms-voting" #FFF3E0 {
+    entity "IndividualResponse" {
+        * id : Long <<PK>>
+        --
+        * votingCode : String <<Index>>
+        * questionId : Long (External Ref)
+        * textResponse : String (For OPEN type)
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    entity "ResponseChoice" {
+        * id : Long <<PK>>
+        --
+        * individualResponseId : Long <<FK>>
+        * choiceId : Long (External Ref)
+        * createdAt : DateTime
+        * updatedAt : DateTime
+    }
+
+    IndividualResponse "1" -- "0,n" ResponseChoice : "individualResponseId"
+}
+
+@enduml
