@@ -9,7 +9,7 @@ title Diagramme de Classes - LAJF-2026
 package "ms-management" #E3F2FD {
     
     package "Enums" #White {
-        enum SurveyState {
+        enum PollState {
             DRAFT
             ACTIVE
             CLOSED
@@ -22,10 +22,10 @@ package "ms-management" #E3F2FD {
     }
 
     package "Controllers" #LightBlue {
-        class SurveyController {
-            + createSurvey(SurveyDTO)
-            + updateSurvey(Long id, SurveyDTO)
-            + activateSurvey(Long id)
+        class PollController {
+            + createPoll(PollDTO)
+            + updatePoll(Long id, PollDTO)
+            + activatePoll(Long id)
             + getFinalResults(Long id)
             + getMyInvitations() : List<InvitationDTO>
             + getVotingToken(Long invitationId) : String
@@ -37,13 +37,13 @@ package "ms-management" #E3F2FD {
     }
 
     package "Services" #White {
-        class SurveyService {
-            + defineSurvey(Survey)
+        class PollService {
+            + definePoll(Poll)
             + activate(Long id)
             + closeAndFetchResults(Long id)
         }
         class InvitationService {
-            + generateCodes(Long surveyId, List<Long> userIds)
+            + generateCodes(Long pollId, List<Long> userIds)
         }
     }
 
@@ -56,18 +56,18 @@ package "ms-management" #E3F2FD {
             - LocalDateTime createdAt
             - LocalDateTime updatedAt
         }
-        class Survey {
+        class Poll {
             - Long id
             - Long userId
             - String title
-            - SurveyState state
+            - PollState state
             - LocalDateTime createdAt
             - LocalDateTime updatedAt
             - LocalDateTime closedAt
         }
         class Question {
             - Long id
-            - Long surveyId
+            - Long pollId
             - String text
             - QuestionType type
             - Integer position
@@ -84,7 +84,7 @@ package "ms-management" #E3F2FD {
         class Invitation {
             - Long id
             - Long userId
-            - Long surveyId
+            - Long pollId
             - String votingCode
             - Boolean isUsed
             - LocalDateTime createdAt
@@ -101,8 +101,8 @@ package "ms-management" #E3F2FD {
         }
     }
     
-    SurveyController --> SurveyService
-    SurveyService --> InvitationService
+    PollController --> PollService
+    PollService --> InvitationService
 }
 
 ' --- SERVICE VOTING ---
@@ -115,14 +115,14 @@ package "ms-voting" #FFF3E0 {
             + cancelVote(String votingCode)
         }
         class InternalResultController {
-            + calculateResults(Long surveyId) : List<AggregatedDataDTO>
+            + calculateResults(Long pollId) : List<AggregatedDataDTO>
         }
     }
 
     package "Services" #White {
         class VoteService {
             + saveResponse(IndividualResponse)
-            + getAggregatedData(Long surveyId)
+            + getAggregatedData(Long pollId)
         }
     }
 
@@ -148,9 +148,9 @@ package "ms-voting" #FFF3E0 {
 }
 
 ' --- COMMUNICATIONS ---
-SurveyService ..> InternalResultController : "HTTP GET /results (Fetch & Close)"
+PollService ..> InternalResultController : "HTTP GET /results (Fetch & Close)"
 IndividualResponse "1" *-- "0,n" ResponseChoice
-Survey "1" *-- "1,n" Question
+Poll "1" *-- "1,n" Question
 Question "1" *-- "0,n" Choice
 
 @enduml
