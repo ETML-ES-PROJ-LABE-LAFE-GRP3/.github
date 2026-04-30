@@ -4,7 +4,7 @@ skinparam packageStyle rectangle
 
 package "Database ms-management" #E3F2FD {
     
-    enum SurveyState {
+    enum PollState {
         DRAFT
         ACTIVE
         CLOSED
@@ -26,12 +26,12 @@ package "Database ms-management" #E3F2FD {
         * updatedAt : DateTime
     }
 
-    entity "Survey" {
+    entity "Poll" {
         * id : Long <<PK>>
         --
         * userId : Long <<FK>>
         * title : String
-        * state : SurveyState
+        * state : PollState
         * createdAt : DateTime
         * updatedAt : DateTime
         * closedAt : DateTime (Nullable)
@@ -40,7 +40,7 @@ package "Database ms-management" #E3F2FD {
     entity "Question" {
         * id : Long <<PK>>
         --
-        * surveyId : Long <<FK>>
+        * pollId : Long <<FK>>
         * text : String
         * type : QuestionType
         * position : Integer
@@ -61,7 +61,7 @@ package "Database ms-management" #E3F2FD {
         * id : Long <<PK>>
         --
         * userId : Long <<FK>>
-        * surveyId : Long <<FK>>
+        * pollId : Long <<FK>>
         * votingCode : String <<Unique>>
         * isUsed : Boolean
         * createdAt : DateTime
@@ -79,11 +79,11 @@ package "Database ms-management" #E3F2FD {
         * updatedAt : DateTime
     }
 
-    User "1" -- "0,n" Survey : "userId"
-    Survey "1" -- "1,n" Question : "surveyId"
+    User "1" -- "0,n" Poll : "userId"
+    Poll "1" -- "1,n" Question : "pollId"
     Question "1" -- "0,n" Choice : "questionId"
     User "1" -- "0,n" Invitation : "userId"
-    Survey "1" -- "0,n" Invitation : "surveyId"
+    Poll "1" -- "0,n" Invitation : "pollId"
     Question "1" -- "0,n" AggregatedResult : "questionId"
 }
 
