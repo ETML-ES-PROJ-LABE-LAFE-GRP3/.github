@@ -9,7 +9,7 @@ title Diagramme de Classes - LAJF-2026
 package "ms-management" #E3F2FD {
     
     package "Enums" #White {
-        enum PollState {
+        enum StateStatus {
             DRAFT
             ACTIVE
             CLOSED
@@ -60,7 +60,7 @@ package "ms-management" #E3F2FD {
             - Long id
             - Long userId
             - String title
-            - PollState state
+            - StateStatus state
             - LocalDateTime createdAt
             - LocalDateTime updatedAt
             - LocalDateTime closedAt
