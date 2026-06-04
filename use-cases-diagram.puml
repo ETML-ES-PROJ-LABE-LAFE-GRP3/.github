@@ -1,0 +1,62 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Visiteur" as V
+actor "Sondeur" as SR
+actor "Sondé" as SE
+
+' Héritage des acteurs
+SR -up-|> V
+SE -up-|> SR
+
+rectangle "SYSTÈME GESTION" {
+    usecase "S'inscrire à l'application" as UC_Inscrire
+    usecase "Se connecter à l'application" as UC_Connecter
+    
+    usecase "Créer un sondage" as UC_Creer
+    usecase "Voir ses sondages" as UC_Voir
+    usecase "Modifier un sondage" as UC_Modif_S
+    usecase "Clôturer un sondage" as UC_Cloturer
+    usecase "Supprimer un sondage" as UC_Suppr_S
+    
+    usecase "Inviter des utilisateurs à répondre aux sondages" as UC_Inviter
+    usecase "Consulter les sondages invités" as UC_Consulter
+    usecase "Récupérer le jeton de vote (Token)" as UC_Token
+}
+
+rectangle "SYSTÈME VOTE" {
+    usecase "Calculer les résultats anonymes" as UC_Calculer
+    usecase "Soumettre ses réponses" as UC_Soumettre
+    usecase "Modifier ses réponses" as UC_Modif_R
+    usecase "Annuler ses réponses" as UC_Annuler
+}
+
+' Relations Visiteur
+V --> UC_Inscrire
+V --> UC_Connecter
+
+' Relations Sondeur
+SR --> UC_Creer
+SR --> UC_Voir
+SR --> UC_Inviter
+
+' Relations Sondé
+SE --> UC_Consulter
+SE --> UC_Soumettre
+SE --> UC_Token
+
+' Extensions dans Gestion
+UC_Modif_S .up.> UC_Voir : <<extend>>
+UC_Cloturer .up.> UC_Voir : <<extend>>
+UC_Suppr_S .up.> UC_Voir : <<extend>>
+
+' Include dans Gestion
+UC_Token ..> UC_Consulter : <<include>>
+
+' Relations inter-systèmes
+UC_Cloturer ..> UC_Calculer : <<include>>
+UC_Modif_R .left.> UC_Consulter : <<extend>>
+UC_Annuler .left.> UC_Consulter : <<extend>>
+
+@enduml

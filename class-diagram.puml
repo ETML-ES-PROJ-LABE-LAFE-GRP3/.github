@@ -1,0 +1,156 @@
+@startuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+title Diagramme de Classes - LAJF-2026
+
+' --- SERVICE MANAGEMENT ---
+package "ms-management" #E3F2FD {
+    
+    package "Enums" #White {
+        enum StateStatus {
+            DRAFT
+            ACTIVE
+            CLOSED
+        }
+        enum QuestionType {
+            OPEN
+            SINGLE_CHOICE
+            MULTIPLE_CHOICE
+        }
+    }
+
+    package "Controllers" #LightBlue {
+        class PollController {
+            + createPoll(PollDTO)
+            + updatePoll(Long id, PollDTO)
+            + activatePoll(Long id)
+            + getFinalResults(Long id)
+            + getMyInvitations() : List<InvitationDTO>
+            + getVotingToken(Long invitationId) : String
+        }
+        class AuthController {
+            + login(Credentials)
+            + register(UserDTO)
+        }
+    }
+
+    package "Services" #White {
+        class PollService {
+            + definePoll(Poll)
+            + activate(Long id)
+            + closeAndFetchResults(Long id)
+        }
+        class InvitationService {
+            + generateCodes(Long pollId, List<Long> userIds)
+        }
+    }
+
+    package "Entities" #White {
+        class User {
+            - Long id
+            - String username
+            - String password
+            - String email
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+        class Poll {
+            - Long id
+            - Long userId
+            - String title
+            - StateStatus state
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+            - LocalDateTime closedAt
+        }
+        class Question {
+            - Long id
+            - Long pollId
+            - String text
+            - QuestionType type
+            - Integer position
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+        class Choice {
+            - Long id
+            - Long questionId
+            - String text
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+        class Invitation {
+            - Long id
+            - Long userId
+            - Long pollId
+            - String votingCode
+            - Boolean isUsed
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+        class AggregatedResult {
+            - Long id
+            - Long questionId
+            - Long choiceId
+            - String answerText
+            - Integer totalVotes
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+    }
+    
+    PollController --> PollService
+    PollService --> InvitationService
+}
+
+' --- SERVICE VOTING ---
+package "ms-voting" #FFF3E0 {
+
+    package "Controllers" #PeachPuff {
+        class VoteController {
+            + submitVote(VoteDTO)
+            + updateVote(String votingCode, VoteDTO)
+            + cancelVote(String votingCode)
+        }
+        class InternalResultController {
+            + calculateResults(Long pollId) : List<AggregatedDataDTO>
+        }
+    }
+
+    package "Services" #White {
+        class VoteService {
+            + saveResponse(IndividualResponse)
+            + getAggregatedData(Long pollId)
+        }
+    }
+
+    package "Entities" #White {
+        class IndividualResponse {
+            - Long id
+            - String votingCode
+            - Long questionId
+            - String textResponse
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+        class ResponseChoice {
+            - Long id
+            - Long individualResponseId
+            - Long choiceId
+            - LocalDateTime createdAt
+            - LocalDateTime updatedAt
+        }
+    }
+    
+    VoteController --> VoteService
+}
+
+' --- COMMUNICATIONS ---
+PollService ..> InternalResultController : "HTTP GET /results (Fetch & Close)"
+IndividualResponse "1" *-- "0,n" ResponseChoice
+Poll "1" *-- "1,n" Question
+Question "1" *-- "0,n" Choice
+
+@enduml

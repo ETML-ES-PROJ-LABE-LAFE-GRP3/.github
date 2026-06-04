@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: API ms-management (LAJF-2026)
+  description: Spécification Swagger du microservice de gestion des sondages et utilisateurs.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Serveur Management
+
+tags:
+  - name: Auth
+    description: Authentification et inscription
+  - name: Management
+    description: Gestion des sondages
+  - name: Invitations
+    description: Gestion des invitations
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Inscription d'un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDTO'
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+        '400':
+          description: Données invalides
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Identifiants invalides
+
+  /polls:
+    post:
+      tags: [Management]
+      summary: Créer un sondage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollDTO'
+      responses:
+        '201':
+          description: Sondage créé
+
+  /polls/{id}:
+    put:
+      tags: [Management]
+      summary: Mettre à jour un sondage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollDTO'
+      responses:
+        '200':
+          description: Sondage mis à jour
+        '403':
+          description: Impossible de modifier un sondage qui n'est plus en DRAFT
+
+  /polls/{id}/activate:
+    post:
+      tags: [Management]
+      summary: Activer un sondage et générer les invitations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Liste des identifiants (userIds) à inviter
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Sondage activé
+
+  /polls/{id}/results:
+    get:
+      tags: [Management]
+      summary: Clôturer le sondage (si actif) et récupérer les résultats finaux
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Résultats finaux récupérés
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AggregatedDataDTO'
+
+  /me/invitations:
+    get:
+      tags: [Invitations]
+      summary: Récupérer la liste des invitations pour l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvitationDTO'
+
+  /me/invitations/{invitationId}/token:
+    get:
+      tags: [Invitations]
+      summary: Obtenir le token/code de vote pour une invitation spécifique
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Code de vote récupéré (à utiliser anonymement dans ms-voting)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  votingCode:
+                    type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserDTO:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    PollDTO:
+      type: object
+      required: [title, questions]
+      properties:
+        title:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionDTO'
+
+    QuestionDTO:
+      type: object
+      required: [text, type, position]
+      properties:
+        text:
+          type: string
+        type:
+          type: string
+          enum: [OPEN, SINGLE_CHOICE, MULTIPLE_CHOICE]
+        position:
+          type: integer
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceDTO'
+
+    ChoiceDTO:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+
+    InvitationDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        pollId:
+          type: integer
+        isUsed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    AggregatedDataDTO:
+      type: object
+      properties:
+        questionId:
+          type: integer
+        choiceId:
+          type: integer
+          nullable: true
+        answerText:
+          type: string
+          nullable: true
+        totalVotes:
+          type: integer
